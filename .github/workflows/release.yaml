@@ -29,5 +29,5 @@ jobs:
           echo "Building tag $TAG on Redis $REDIS_VERSION"
           echo $DPASS | docker login --username $DUSER --password-stdin
           docker-compose build redis_with_plugin 
-          docker tag redis_with_plugin shawnsarwar/redis_hooks:$TAG
-        # docker push shawnsarwar/redis_hooks:$TAG
+          docker tag redis_hooks_redis_with_plugin shawnsarwar/redis_hooks:$TAG
+          docker push shawnsarwar/redis_hooks:$TAG
