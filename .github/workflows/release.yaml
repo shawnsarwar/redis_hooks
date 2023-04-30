@@ -12,13 +12,16 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
-
+      
+      - name: Set Tag
+        id: vars
+        run: echo "tag=${GITHUB_REF#refs/*/}" >> $GITHUB_OUTPUT
       - name: Build Image
         env:
           DUSER: ${{ secrets.DOCKER_USERNAME }}
           DPASS: ${{ secrets.DOCKER_PASSWORD }}
-          TAG: ${{ steps.meta.outputs.tags }}
-          REDIS_VERSION: ${{ env.REDIS_VERSION }}
+          TAG: ${{ steps.vars.outputs.tag }}
+          REDIS_VERSION: ${{ vars.REDIS_VERSION }}
         run:  |
           echo "Building tag $TAG on Redis $REDIS_VERSION"
           echo $DPASS | docker login --username $DUSER --password-stdin
