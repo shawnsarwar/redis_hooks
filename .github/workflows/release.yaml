@@ -1,0 +1,27 @@
+
+name: Publish on Release
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  push_to_registry:
+    name: Release && Docker Release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Build Image
+        env:
+          DUSER: ${{ secrets.DOCKER_USERNAME }}
+          DPASS: ${{ secrets.DOCKER_PASSWORD }}
+          TAG: ${{ steps.meta.outputs.tags }}
+          REDIS_VERSION: ${{ env.REDIS_VERSION }}
+        steps:
+         - run: echo "Building tag $TAG on Redis $REDIS_VERSION"
+         - run: echo $DPASS | docker login --username $DUSER --password-stdin
+         - run: docker-compose build redis_with_plugin 
+         - run: docker tag redis_with_plugin shawnsarwar/redis_hooks:$TAG
+        #  - run: docker push shawnsarwar/redis_hooks:$TAG
