@@ -1,0 +1,42 @@
+version: "3.9"
+
+volumes:
+  build:
+    driver: local
+    driver_opts:
+      type: none
+      device: $PWD/build
+      o: bind
+  conf:
+    driver: local
+    driver_opts:
+      type: none
+      device: $PWD/conf
+      o: bind
+  
+services:
+  plugin:
+    container_name: plugin
+    build:
+      context: redis_hooks
+    restart: no
+    stdin_open: true
+    tty: true
+    volumes:
+      - build:/build/target/
+    command: ["cargo", "build", "--release"]
+  
+  redis:
+    container_name: redis
+    image: redis:7.0.11
+    depends_on:
+      plugin:
+        condition: service_completed_successfully
+    volumes:
+      - build:/plugins
+      - conf:/conf
+    ports:
+      - 6379:6379
+    command: "redis-server /conf/redis.conf"
+    extra_hosts:
+    - "host.docker.internal:host-gateway"
