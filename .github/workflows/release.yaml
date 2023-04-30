@@ -31,3 +31,9 @@ jobs:
           docker-compose build redis_with_plugin 
           docker tag redis_hooks_redis_with_plugin shawnsarwar/redis_hooks:$TAG
           docker push shawnsarwar/redis_hooks:$TAG
+      - name: Upload binaries to release
+        uses: svenstaro/upload-release-action@v2
+        with:
+          file: build/release/libredis_hooks.so
+          tag: ${{ github.ref }}
+          overwrite: false
