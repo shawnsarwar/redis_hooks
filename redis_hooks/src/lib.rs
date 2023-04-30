@@ -71,23 +71,6 @@ fn on_match_prefix(key: &str, url: &str, auth: &str){
     }
 }
 
-// fn on_event(ctx: &Context, event_type: NotifyEvent, event: &str, key: &str) {
-//     let msg = format!(
-//         "Received event: {:?} on key: {} via event: {}",
-//         event_type, key, event
-//     );
-//     ctx.log_debug(msg.as_str());
-//     let prefix = settings_value_or_panic("prefixMatch");
-//     match match_prefix(key, &prefix) {
-//         Some(key) => {
-//             let url = settings_value_or_panic("url");
-//             let auth = settings_value_or_panic("auth");
-//             on_match_prefix(key, &url, &auth);
-//         }
-//         _ => { }
-//     }
-// }
-
 fn make_prefix_handler<'a>(prefix: String, url: String, auth: String) -> impl Fn(&str) + 'a{
     move |key| {
         match match_prefix(key, &prefix) {
@@ -98,7 +81,9 @@ fn make_prefix_handler<'a>(prefix: String, url: String, auth: String) -> impl Fn
     }
 }}
 
+// TODO Macro to handle different event types
 fn make_event_handler() -> impl Fn(&Context, NotifyEvent, &str, &str){
+    // TODO pass in conf
     let prefix = settings_value_or_panic("prefixMatch");
     let url = settings_value_or_panic("url");
     let auth = settings_value_or_panic("auth");
