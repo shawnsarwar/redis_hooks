@@ -9,19 +9,25 @@ jobs:
   push_to_registry:
     name: Release && Docker Release
     runs-on: ubuntu-latest
+    environment: env
     steps:
       - name: Checkout
         uses: actions/checkout@v3
-
+      
+      - name: Set Tag
+        shell: bash
+        id: vars
+        run: echo "tag=${GITHUB_REF#refs/*/}" >> $GITHUB_OUTPUT
       - name: Build Image
+        shell: bash
         env:
           DUSER: ${{ secrets.DOCKER_USERNAME }}
           DPASS: ${{ secrets.DOCKER_PASSWORD }}
-          TAG: ${{ steps.meta.outputs.tags }}
-          REDIS_VERSION: ${{ env.REDIS_VERSION }}
+          TAG: ${{ steps.vars.outputs.tag }}
+          REDIS_VERSION: ${{ vars.REDIS_VERSION }}
         run:  |
           echo "Building tag $TAG on Redis $REDIS_VERSION"
           echo $DPASS | docker login --username $DUSER --password-stdin
           docker-compose build redis_with_plugin 
-          docker tag redis_with_plugin shawnsarwar/redis_hooks:$TAG
-        # docker push shawnsarwar/redis_hooks:$TAG
+          docker tag redis_hooks_redis_with_plugin shawnsarwar/redis_hooks:$TAG
+          docker push shawnsarwar/redis_hooks:$TAG
