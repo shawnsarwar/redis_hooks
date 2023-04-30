@@ -1,21 +1,19 @@
 #[macro_use]
 extern crate redis_module;
 
-use redis_module::{Context, NotifyEvent };
-
 use std::collections::HashMap;
+use std::sync::RwLock;
+
+use redis_module::{Context, NotifyEvent };
 
 use config::{ Config, FileFormat, File };
 use ureq::Error as WebError;
-
 use lazy_static::lazy_static;
-use std::sync::RwLock;
 
 const CONFIG_PATH: &str = "/conf/settings.yaml";
 lazy_static! {
     static ref SETTINGS: RwLock<HashMap<String, String>> = RwLock::new(get_config());
 }
-
 
 fn get_config() -> HashMap<String, String>{
     let builder = Config::builder()
@@ -55,38 +53,63 @@ fn call_endpoint(url: &str, auth: &str, event_type: &str, event_id: &str){
     }
 }
 
-fn match_predicate<'a>(key: &'a str, pat: &str) -> Option<&'a str> {
-    Some(key).filter(|s| s.contains(pat))
+fn match_prefix<'a>(key: &'a str, pat: &str) -> Option<&'a str> {
+    Some(key).filter(|s| s.starts_with(pat))
 }
 
-fn on_matching_predicate(key: &str, url: &str, auth: &str){
+fn on_match_prefix(key: &str, url: &str, auth: &str){
     let parts = key.split(":").collect::<Vec<&str>>();
     let event_type = parts.get(1);
     let event_id = parts.get(2);
     match (event_type, event_id) {
         (Some(event_type), Some(event_id)) => {
-            println!("type: {} id: {}", event_type, event_id);
             call_endpoint(url, auth, event_type, event_id)
         }
         _ => {
-            println!("missing value in matching predicate: {}", key);
+            println!("missing value in matched key: {}", key);
         }
     }
 }
 
-fn on_event(ctx: &Context, event_type: NotifyEvent, event: &str, key: &str) {
-    let msg = format!(
-        "Received event: {:?} on key: {} via event: {}",
-        event_type, key, event
-    );
-    ctx.log_debug(msg.as_str());
-    match match_predicate(key, "iExpire") {
-        Some(key) => {
-            let url = settings_value_or_panic("url");
-            let auth = settings_value_or_panic("auth");
-            on_matching_predicate(key, &url, &auth);
-        }
-        _ => { }
+// fn on_event(ctx: &Context, event_type: NotifyEvent, event: &str, key: &str) {
+//     let msg = format!(
+//         "Received event: {:?} on key: {} via event: {}",
+//         event_type, key, event
+//     );
+//     ctx.log_debug(msg.as_str());
+//     let prefix = settings_value_or_panic("prefixMatch");
+//     match match_prefix(key, &prefix) {
+//         Some(key) => {
+//             let url = settings_value_or_panic("url");
+//             let auth = settings_value_or_panic("auth");
+//             on_match_prefix(key, &url, &auth);
+//         }
+//         _ => { }
+//     }
+// }
+
+fn make_prefix_handler<'a>(prefix: String, url: String, auth: String) -> impl Fn(&str) + 'a{
+    move |key| {
+        match match_prefix(key, &prefix) {
+            Some(key) => {
+                on_match_prefix(key, &url, &auth);
+            }
+            _ => { }
+    }
+}}
+
+fn make_event_handler() -> impl Fn(&Context, NotifyEvent, &str, &str){
+    let prefix = settings_value_or_panic("prefixMatch");
+    let url = settings_value_or_panic("url");
+    let auth = settings_value_or_panic("auth");
+    let inner = make_prefix_handler(prefix, url, auth);
+    move |ctx: &Context, event_type: NotifyEvent, event: &str, key: &str| {
+        let msg = format!(
+            "Received event: {:?} on key: {} via event: {}",
+            event_type, key, event
+        );
+        ctx.log_debug(msg.as_str());
+        inner(key);
     }
 }
 
@@ -98,7 +121,7 @@ redis_module! {
     data_types: [],
     commands: [],
     event_handlers: [
-        [@EXPIRED @EVICTED: on_event],
+        [@EXPIRED @EVICTED: make_event_handler()],
     ]
 }
 

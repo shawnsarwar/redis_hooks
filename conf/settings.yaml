@@ -1,2 +1,10 @@
-url: "http://host.docker.internal:5001/bc-beta-7768a/us-central1/triggerTimeout"
-auth: "IEATFARTS"
+# key events with this prefix will be forwared.
+# a : separator is expected before any more key components
+# i.e. iExpire:iAmATimeout:Mykeyisreally20028
+prefixMatch: "iExpire"                          
+# endpoint to be POSTed to
+# payload is this example
+# { "type" : "iAmATimeout", "value": "Mykeyisreally20028" }
+url: "http://target-endpoint"
+# value of the Authorization Header
+auth: "i might be base64 encoded or something"

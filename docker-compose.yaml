@@ -15,10 +15,11 @@ volumes:
       o: bind
   
 services:
-  plugin:
+  plugin_standalone_build:
     container_name: plugin
     build:
       context: redis_hooks
+      target: deps
     restart: no
     stdin_open: true
     tty: true
@@ -26,14 +27,29 @@ services:
       - build:/build/target/
     command: ["cargo", "build", "--release"]
   
-  redis:
+  redis_standalone:
     container_name: redis
-    image: redis:7.0.11
+    image: redis:${REDIS_VERSION:?"REQUIRED"}
     depends_on:
-      plugin:
+      plugin_standalone_build:
         condition: service_completed_successfully
     volumes:
       - build:/plugins
+      - conf:/conf
+    ports:
+      - 6379:6379
+    command: "redis-server /conf/redis.conf"
+    extra_hosts:
+    - "host.docker.internal:host-gateway"
+
+  redis_with_plugin:
+    container_name: redis-hooked
+    build:
+      context: redis_hooks
+      target: redis
+      args:
+        - REDIS_VERSION=${REDIS_VERSION}
+    volumes:
       - conf:/conf
     ports:
       - 6379:6379
