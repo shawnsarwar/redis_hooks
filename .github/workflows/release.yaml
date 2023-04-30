@@ -14,9 +14,11 @@ jobs:
         uses: actions/checkout@v3
       
       - name: Set Tag
+        shell: bash
         id: vars
         run: echo "tag=${GITHUB_REF#refs/*/}" >> $GITHUB_OUTPUT
       - name: Build Image
+        shell: bash
         env:
           DUSER: ${{ secrets.DOCKER_USERNAME }}
           DPASS: ${{ secrets.DOCKER_PASSWORD }}
