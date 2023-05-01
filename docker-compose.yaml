@@ -15,6 +15,20 @@ volumes:
       o: bind
   
 services:
+  plugin_standalone_build:
+    container_name: plugin
+    build:
+      context: redis_hooks
+      target: deps
+      args:
+        - REDIS_VERSION=${REDIS_VERSION}
+    restart: no
+    stdin_open: true
+    tty: true
+    volumes:
+      - build:/build/target/
+    command: ["cargo", "build", "--release"]
+
   redis_with_plugin:
     container_name: redis-hooked
     build:
