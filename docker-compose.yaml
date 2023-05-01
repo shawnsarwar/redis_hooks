@@ -22,9 +22,6 @@ services:
       target: deps
       args:
         - REDIS_VERSION=${REDIS_VERSION}
-    restart: no
-    stdin_open: true
-    tty: true
     volumes:
       - build:/build/target/
     command: ["cargo", "build", "--release"]
