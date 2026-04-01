@@ -6,14 +6,29 @@ on:
     types: [published]
 
 jobs:
+  test:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+      - name: Run unit tests
+        working-directory: redis_hooks
+        run: cargo test
+
   push_to_registry:
     name: Release && Docker Release
+    needs: test
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     environment: env
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
-      
+        uses: actions/checkout@v4
+
       - name: Set Tag
         shell: bash
         id: vars
@@ -28,14 +43,13 @@ jobs:
         run:  |
           echo "Building tag $TAG on Redis $REDIS_VERSION"
           echo $DPASS | docker login --username $DUSER --password-stdin
-          docker-compose build plugin_standalone_build
-          docker-compose run plugin_standalone_build
-          docker-compose build redis_with_plugin
-          docker tag redis_hooks_redis_with_plugin shawnsarwar/redis_hooks:$TAG
+          scripts/lib-build.sh
+          scripts/docker-build.sh
+          docker tag shawnsarwar/redis_hooks:local shawnsarwar/redis_hooks:$TAG
           docker push shawnsarwar/redis_hooks:$TAG
       - name: Upload binaries to release
         uses: svenstaro/upload-release-action@v2
         with:
-          file: build/release/libredis_hooks.so
+          file: release/libredis_hooks.so
           tag: ${{ github.ref }}
           overwrite: false

@@ -1,0 +1,3 @@
+prefixMatch: "iExpire"
+url: "http://host.docker.internal:9999"
+auth: "test-auth-token"
